@@ -8,9 +8,23 @@ set -euo pipefail
 
 CACHE_DIR="${HOME}/.claude/plugins/claude-tokens-plugin-cache"
 CACHE_FILE="${CACHE_DIR}/usage-cache.json"
+CONFIG_FILE="${CACHE_DIR}/config.json"
 CACHE_TTL=30  # seconds
 
 mkdir -p "$CACHE_DIR"
+
+# --- Load locale config ---
+LANG_SESSION="session"
+LANG_WEEKLY="weekly"
+LANG_CTX="ctx"
+if [[ -f "$CONFIG_FILE" ]]; then
+  locale=$(jq -r '.locale // "en"' "$CONFIG_FILE" 2>/dev/null)
+  if [[ "$locale" == "ru" ]]; then
+    LANG_SESSION="сессия"
+    LANG_WEEKLY="неделя"
+    LANG_CTX="контекст"
+  fi
+fi
 
 # --- Read stdin (context window data from Claude Code) ---
 INPUT=$(cat)
@@ -103,19 +117,19 @@ if [[ -n "$usage_data" ]]; then
   if [[ -n "$session_pct" ]]; then
     session_int=$(printf '%.0f' "$session_pct")
     clr=$(color_for_pct "$session_int")
-    parts+=("${clr}session ${session_int}%%${RESET}")
+    parts+=("${clr}${LANG_SESSION} ${session_int}%%${RESET}")
   fi
 
   if [[ -n "$weekly_pct" ]]; then
     weekly_int=$(printf '%.0f' "$weekly_pct")
     clr=$(color_for_pct "$weekly_int")
-    parts+=("${clr}weekly ${weekly_int}%%${RESET}")
+    parts+=("${clr}${LANG_WEEKLY} ${weekly_int}%%${RESET}")
   fi
 fi
 
 # Context window
 ctx_clr=$(color_for_pct "$CTX_PCT_INT")
-parts+=("${ctx_clr}ctx ${CTX_PCT_INT}%%${RESET}")
+parts+=("${ctx_clr}${LANG_CTX} ${CTX_PCT_INT}%%${RESET}")
 
 # Join with separator
 output=""
