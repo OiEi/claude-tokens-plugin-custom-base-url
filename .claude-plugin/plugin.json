@@ -1,6 +1,6 @@
 {
   "name": "claude-tokens-plugin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Lightweight token usage display for Claude Code status line",
   "author": {
     "name": "aleksandrstarodubcev"
@@ -8,5 +8,6 @@
   "repository": "https://github.com/jointime1/claude-tokens-plugin",
   "license": "MIT",
   "keywords": ["tokens", "usage", "status-line", "lightweight"],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "commands": "./commands/"
 }

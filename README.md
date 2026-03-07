@@ -1,35 +1,56 @@
 # claude-tokens-plugin
 
-Lightweight Claude Code plugin that displays token usage, cost, and model info in the status line. Zero LLM token consumption — runs on pure bash + jq.
+Lightweight Claude Code plugin that displays plan usage limits and context window in the status line. Zero LLM token consumption — fetches data from Anthropic API via pure bash + jq + curl.
 
 ## Display
 
 ```
-45% 125kt | $0.12 | Claude Sonnet 4
+session 68% | weekly 17% | ctx 45%
 ```
 
-Color-coded by context usage:
+With Russian locale:
+```
+сессия 68% | неделя 17% | контекст 45%
+```
+
+Color-coded:
 - **Green**: < 50%
-- **Yellow**: 50–80%
+- **Yellow**: 50-80%
 - **Red**: > 80%
 
 ## Installation
 
-```bash
+```
 /plugin marketplace add jointime1/claude-tokens-plugin
 /plugin install claude-tokens-plugin
 ```
 
 ## Setup
 
-Run the setup skill to configure the status line:
+Run the setup command to configure the status line:
 
 ```
-/claude-tokens-plugin:setup
+/setup
 ```
 
-Then restart Claude Code. Token usage will appear in the status line.
+It will ask your preferred language (English/Russian), configure `~/.claude/settings.json`, and you're done. Restart Claude Code to see the status line.
 
 ## Requirements
 
-- [jq](https://jqlang.github.io/jq/) must be installed and available in PATH
+- [jq](https://jqlang.github.io/jq/)
+- [curl](https://curl.se/)
+- Claude Pro/Max subscription (OAuth credentials for usage API)
+
+## How it works
+
+The status line script:
+1. Reads context window data from stdin (provided by Claude Code)
+2. Fetches plan usage (session/weekly limits) from `api.anthropic.com/api/oauth/usage` using your OAuth token
+3. Caches API responses for 30 seconds
+4. Outputs a color-coded summary line
+
+No LLM calls are made. The API endpoint returns usage statistics only.
+
+## Star
+
+If you find this plugin useful, please give it a star on GitHub!
