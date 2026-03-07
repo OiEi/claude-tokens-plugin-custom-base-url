@@ -9,7 +9,7 @@ set -euo pipefail
 CACHE_DIR="${HOME}/.claude/plugins/claude-tokens-plugin-cache"
 CACHE_FILE="${CACHE_DIR}/usage-cache.json"
 CONFIG_FILE="${CACHE_DIR}/config.json"
-CACHE_TTL=30  # seconds
+CACHE_TTL=60  # seconds
 
 mkdir -p "$CACHE_DIR"
 
