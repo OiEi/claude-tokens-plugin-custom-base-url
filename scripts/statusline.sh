@@ -21,6 +21,8 @@ LANG_WEEKLY="weekly"
 LANG_CTX="ctx"
 LANG_H="h"
 LANG_M="m"
+LANG_RATE_LIMIT="rate limit"
+LANG_NO_UPDATES="no updates"
 if [[ -f "$CONFIG_FILE" ]]; then
   locale=$(jq -r '.locale // "en"' "$CONFIG_FILE" 2>/dev/null)
   if [[ "$locale" == "ru" ]]; then
@@ -29,6 +31,8 @@ if [[ -f "$CONFIG_FILE" ]]; then
     LANG_CTX="контекст"
     LANG_H="ч"
     LANG_M="м"
+    LANG_RATE_LIMIT="рейт лимит"
+    LANG_NO_UPDATES="нет обновлений"
   fi
 fi
 
@@ -103,14 +107,13 @@ if [[ -f "$CACHE_FILE" ]]; then
 fi
 
 # Fetch fresh data if cache is stale
+in_backoff=false
+if [[ -f "$BACKOFF_FILE" ]]; then
+  backoff_time=$(cat "$BACKOFF_FILE" 2>/dev/null || echo 0)
+  backoff_age=$(( $(date +%s) - backoff_time ))
+  [[ "$backoff_age" -lt "$BACKOFF_TTL" ]] && in_backoff=true
+fi
 if [[ -z "$usage_data" ]]; then
-  # Проверяем backoff — не пытаемся если недавно получили rate limit
-  in_backoff=false
-  if [[ -f "$BACKOFF_FILE" ]]; then
-    backoff_time=$(cat "$BACKOFF_FILE" 2>/dev/null || echo 0)
-    backoff_age=$(( $(date +%s) - backoff_time ))
-    [[ "$backoff_age" -lt "$BACKOFF_TTL" ]] && in_backoff=true
-  fi
   if [[ "$in_backoff" == false ]] && fetch_usage 2>/dev/null; then
     usage_data=$(cat "$CACHE_FILE" 2>/dev/null)
   else
@@ -152,6 +155,11 @@ make_bar() {
 }
 
 parts=()
+
+# Rate limit backoff indicator
+if [[ "$in_backoff" == true ]]; then
+  parts+=("${YELLOW}${LANG_RATE_LIMIT}${RESET} ${DIM}(${LANG_NO_UPDATES})${RESET}")
+fi
 
 # Model name
 if [[ -n "$MODEL" && "$MODEL" != "?" ]]; then

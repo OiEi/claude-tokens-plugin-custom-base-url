@@ -5,26 +5,28 @@ Lightweight Claude Code plugin that displays plan usage limits and context windo
 ## Display
 
 ```
-claude-sonnet-4-6 | session ━━━━━━━─────────────── 37% 1h 45m | weekly ━━━━──────────────── 21% 6d 5h | ctx ━━────────────────── 10%
+Sonnet 4.6 | session ━━━───── 37% 1h 45m | weekly ━━────── 21% 6d 5h | ctx ━──────── 10%
+```
+
+When API rate limit is hit, a notice appears at the start and cached data continues to be shown:
+```
+rate limit (no updates) | Sonnet 4.6 | session ━━━───── 37% 1h 45m | weekly ━━────── 21% 6d 5h | ctx ━──────── 10%
 ```
 
 With Russian locale:
 ```
-claude-sonnet-4-6 | сессия ━━━━━━━─────────────── 37% 1ч 45м | неделя ━━━━──────────────── 21% 6д 5ч | контекст ━━────────────────── 10%
+Sonnet 4.6 | сессия ━━━───── 37% 1ч 45м | неделя ━━────── 21% 6д 5ч | контекст ━──────── 10%
+```
+
+When rate limited:
+```
+рейт лимит (нет обновлений) | Sonnet 4.6 | сессия ━━━───── 37% 1ч 45м | неделя ━━────── 21% 6д 5ч | контекст ━──────── 10%
 ```
 
 Color-coded:
 - **Green**: < 50%
 - **Yellow**: 50–80%
 - **Red**: > 80%
-
-## Features
-
-- **Progress bars** — colour-coded `━━━━━━━───────────────` bars (classic line style) for session, weekly, and context window
-- **Active model** — current model name shown at the start of the status line
-- **Reset countdowns** — time remaining until session resets (e.g. `1h 45m`) and weekly limit resets (e.g. `6d 5h`)
-- **Rate limit resilience** — backoff mechanism prevents request storms when API rate limits; stale cache is always used as fallback
-- **Locale support** — English and Russian
 
 ## Installation
 
