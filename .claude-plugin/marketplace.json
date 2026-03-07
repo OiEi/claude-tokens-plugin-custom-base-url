@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-tokens-plugin",
+  "description": "Lightweight token usage display for Claude Code status line",
+  "owner": {
+    "name": "aleksandrstarodubcev"
+  },
+  "plugins": [
+    {
+      "name": "claude-tokens-plugin",
+      "description": "Lightweight token usage display for Claude Code status line. Zero LLM calls — pure bash + jq.",
+      "version": "1.0.0",
+      "author": {
+        "name": "aleksandrstarodubcev"
+      },
+      "source": "./",
+      "category": "productivity",
+      "homepage": "https://github.com/jointime1/claude-tokens-plugin",
+      "tags": ["tokens", "usage", "status-line", "lightweight"]
+    }
+  ],
+  "version": "1.0.0"
+}
