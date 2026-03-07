@@ -77,16 +77,23 @@ fetch_usage() {
 
 # Check cache freshness
 usage_data=""
+stale_data=""
 if [[ -f "$CACHE_FILE" ]]; then
+  stale_data=$(cat "$CACHE_FILE")
   cache_age=$(( $(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0) ))
   if [[ "$cache_age" -lt "$CACHE_TTL" ]]; then
-    usage_data=$(cat "$CACHE_FILE")
+    usage_data="$stale_data"
   fi
 fi
 
 # Fetch fresh data if cache is stale
 if [[ -z "$usage_data" ]]; then
-  fetch_usage 2>/dev/null && usage_data=$(cat "$CACHE_FILE" 2>/dev/null) || true
+  if fetch_usage 2>/dev/null; then
+    usage_data=$(cat "$CACHE_FILE" 2>/dev/null)
+  else
+    # Use stale cache as fallback (better than nothing)
+    usage_data="$stale_data"
+  fi
 fi
 
 # --- Format output ---
