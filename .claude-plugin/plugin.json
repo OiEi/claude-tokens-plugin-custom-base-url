@@ -5,7 +5,7 @@
   "author": {
     "name": "aleksandrstarodubcev"
   },
-  "repository": "https://github.com/aleksandrstarodubcev/claude-tokens-plugin",
+  "repository": "https://github.com/jointime1/claude-tokens-plugin",
   "license": "MIT",
   "keywords": ["tokens", "usage", "status-line", "lightweight"],
   "skills": "./skills/"

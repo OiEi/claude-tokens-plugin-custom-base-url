@@ -16,7 +16,7 @@ Color-coded by context usage:
 ## Installation
 
 ```bash
-/plugin marketplace add https://github.com/aleksandrstarodubcev/claude-tokens-plugin
+/plugin marketplace add jointime1/claude-tokens-plugin
 /plugin install claude-tokens-plugin
 ```
 
