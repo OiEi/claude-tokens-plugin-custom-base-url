@@ -5,18 +5,26 @@ Lightweight Claude Code plugin that displays plan usage limits and context windo
 ## Display
 
 ```
-session 68% | weekly 17% | ctx 45%
+claude-sonnet-4-6 | session ━━━━━━━─────────────── 37% 1h 45m | weekly ━━━━──────────────── 21% 6d 5h | ctx ━━────────────────── 10%
 ```
 
 With Russian locale:
 ```
-сессия 68% | неделя 17% | контекст 45%
+claude-sonnet-4-6 | сессия ━━━━━━━─────────────── 37% 1ч 45м | неделя ━━━━──────────────── 21% 6д 5ч | контекст ━━────────────────── 10%
 ```
 
 Color-coded:
 - **Green**: < 50%
-- **Yellow**: 50-80%
+- **Yellow**: 50–80%
 - **Red**: > 80%
+
+## Features
+
+- **Progress bars** — colour-coded `━━━━━━━───────────────` bars (classic line style) for session, weekly, and context window
+- **Active model** — current model name shown at the start of the status line
+- **Reset countdowns** — time remaining until session resets (e.g. `1h 45m`) and weekly limit resets (e.g. `6d 5h`)
+- **Rate limit resilience** — backoff mechanism prevents request storms when API rate limits; stale cache is always used as fallback
+- **Locale support** — English and Russian
 
 ## Installation
 
@@ -44,10 +52,10 @@ It will ask your preferred language (English/Russian), configure `~/.claude/sett
 ## How it works
 
 The status line script:
-1. Reads context window data from stdin (provided by Claude Code)
+1. Reads context window data and model info from stdin (provided by Claude Code)
 2. Fetches plan usage (session/weekly limits) from `api.anthropic.com/api/oauth/usage` using your OAuth token
-3. Caches API responses for 30 seconds
-4. Outputs a color-coded summary line
+3. Caches API responses for 60 seconds; on rate limit error waits 2 minutes before retrying
+4. Outputs a colour-coded summary line with progress bars and reset countdowns
 
 No LLM calls are made. The API endpoint returns usage statistics only.
 
