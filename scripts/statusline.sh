@@ -80,7 +80,12 @@ usage_data=""
 stale_data=""
 if [[ -f "$CACHE_FILE" ]]; then
   stale_data=$(cat "$CACHE_FILE")
-  cache_age=$(( $(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0) ))
+  if [[ "$OSTYPE" == darwin* ]]; then
+    cache_mtime=$(stat -f %m "$CACHE_FILE" 2>/dev/null || echo 0)
+  else
+    cache_mtime=$(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0)
+  fi
+  cache_age=$(( $(date +%s) - cache_mtime ))
   if [[ "$cache_age" -lt "$CACHE_TTL" ]]; then
     usage_data="$stale_data"
   fi
