@@ -30,11 +30,15 @@ if [[ -f "$CONFIG_FILE" ]]; then
   locale=$(jq -r '.locale // "en"' "$CONFIG_FILE" 2>/dev/null)
   base_url_override=$(jq -r '.base_url // empty' "$CONFIG_FILE" 2>/dev/null)
   quota_endpoint_override=$(jq -r '.quota_endpoint // empty' "$CONFIG_FILE" 2>/dev/null)
+  auth_token_override=$(jq -r '.auth_token // empty' "$CONFIG_FILE" 2>/dev/null)
   if [[ -n "$base_url_override" ]]; then
     BASE_URL="$base_url_override"
   fi
   if [[ -n "$quota_endpoint_override" ]]; then
     QUOTA_ENDPOINT="$quota_endpoint_override"
+  fi
+  if [[ -n "$auth_token_override" ]]; then
+    export ANTHROPIC_AUTH_TOKEN="$auth_token_override"
   fi
   if [[ "$locale" == "ru" ]]; then
     LANG_SESSION="сессия"
@@ -55,27 +59,25 @@ MODEL=$(echo "$INPUT" | jq -r '.model.display_name // .model.id // "?"' 2>/dev/n
 
 # --- Fetch plan usage (with cache) ---
 fetch_usage() {
-  # Try macOS Keychain first
-  local creds_json=""
-  if [[ "$OSTYPE" == darwin* ]]; then
-    creds_json=$(/usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)
-  fi
+  # Try ANTHROPIC_AUTH_TOKEN env var first (for custom APIs)
+  local token="${ANTHROPIC_AUTH_TOKEN:-}"
 
-  # Fallback to credentials file
-  if [[ -z "$creds_json" ]]; then
-    local cred_file="${HOME}/.claude/.credentials.json"
-    if [[ -f "$cred_file" ]]; then
-      creds_json=$(cat "$cred_file")
+  # Fallback to macOS Keychain
+  if [[ -z "$token" ]] && [[ "$OSTYPE" == darwin* ]]; then
+    local creds_json=$(/usr/bin/security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null || true)
+    if [[ -n "$creds_json" ]]; then
+      token=$(echo "$creds_json" | jq -r '.claudeAiOauth.accessToken // .accessToken // empty' 2>/dev/null)
     fi
   fi
 
-  if [[ -z "$creds_json" ]]; then
-    return 1
+  # Fallback to credentials file
+  if [[ -z "$token" ]]; then
+    local cred_file="${HOME}/.claude/.credentials.json"
+    if [[ -f "$cred_file" ]]; then
+      local creds_json=$(cat "$cred_file")
+      token=$(echo "$creds_json" | jq -r '.claudeAiOauth.accessToken // .accessToken // empty' 2>/dev/null)
+    fi
   fi
-
-  # Extract access token (handle nested claudeAiOauth structure)
-  local token
-  token=$(echo "$creds_json" | jq -r '.claudeAiOauth.accessToken // .accessToken // empty' 2>/dev/null)
 
   if [[ -z "$token" ]]; then
     return 1
@@ -84,7 +86,7 @@ fetch_usage() {
   # Fetch usage from API
   local response
   response=$(curl -s --max-time 5 \
-    -H "Authorization: Bearer ${token}" \
+    -H "Authorization: ${token}" \
     -H "Content-Type: application/json" \
     "${BASE_URL}${QUOTA_ENDPOINT}" 2>/dev/null) || return 1
 
