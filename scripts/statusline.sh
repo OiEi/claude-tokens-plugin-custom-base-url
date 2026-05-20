@@ -24,12 +24,17 @@ LANG_M="m"
 LANG_RATE_LIMIT="rate limit"
 LANG_NO_UPDATES="no updates"
 BASE_URL="https://api.anthropic.com"
+QUOTA_ENDPOINT="/api/oauth/usage"
 
 if [[ -f "$CONFIG_FILE" ]]; then
   locale=$(jq -r '.locale // "en"' "$CONFIG_FILE" 2>/dev/null)
   base_url_override=$(jq -r '.base_url // empty' "$CONFIG_FILE" 2>/dev/null)
+  quota_endpoint_override=$(jq -r '.quota_endpoint // empty' "$CONFIG_FILE" 2>/dev/null)
   if [[ -n "$base_url_override" ]]; then
     BASE_URL="$base_url_override"
+  fi
+  if [[ -n "$quota_endpoint_override" ]]; then
+    QUOTA_ENDPOINT="$quota_endpoint_override"
   fi
   if [[ "$locale" == "ru" ]]; then
     LANG_SESSION="сессия"
@@ -76,13 +81,12 @@ fetch_usage() {
     return 1
   fi
 
-  # Fetch usage from Anthropic API
+  # Fetch usage from API
   local response
   response=$(curl -s --max-time 5 \
     -H "Authorization: Bearer ${token}" \
-    -H "anthropic-beta: oauth-2025-04-20" \
     -H "Content-Type: application/json" \
-    "${BASE_URL}/api/oauth/usage" 2>/dev/null) || return 1
+    "${BASE_URL}${QUOTA_ENDPOINT}" 2>/dev/null) || return 1
 
   if [[ -z "$response" ]]; then
     return 1
@@ -172,8 +176,47 @@ if [[ -n "$MODEL" && "$MODEL" != "?" ]]; then
   parts+=("${MODEL}")
 fi
 
+# Transform usage data format if needed
+transform_usage_data() {
+  local data="$1"
+  # Check if response has the new format (with data.limits structure)
+  if echo "$data" | jq -e '.data.limits' &>/dev/null; then
+    # Transform new format to expected format
+    # Find TOKENS_LIMIT with unit=6, number=1 (likely 1 hour) and unit=3, number=5 (likely 15 min)
+    local session_limit=$(echo "$data" | jq -r '.data.limits[] | select(.type=="TOKENS_LIMIT" and .unit==6 and .number==1)' 2>/dev/null)
+    local weekly_limit=$(echo "$data" | jq -r '.data.limits[] | select(.type=="TOKENS_LIMIT" and .unit==3 and .number==5)' 2>/dev/null)
+
+    # Transform to expected format
+    local result='{}'
+
+    if [[ -n "$session_limit" ]]; then
+      local pct=$(echo "$session_limit" | jq -r '.percentage // 0' 2>/dev/null)
+      local reset_time=$(echo "$session_limit" | jq -r '.nextResetTime // 0' 2>/dev/null)
+      # Convert milliseconds to ISO date
+      local iso_reset=$(date -r $((reset_time / 1000)) -u +"%Y-%m-%dT%H:%M:%S.000000+00:00" 2>/dev/null || echo "")
+      result=$(echo "$result" | jq --arg pct "$pct" --arg reset "$iso_reset" '. + {"five_hour": {"utilization": ($pct | tonumber), "resets_at": $reset}}')
+    fi
+
+    if [[ -n "$weekly_limit" ]]; then
+      local pct=$(echo "$weekly_limit" | jq -r '.percentage // 0' 2>/dev/null)
+      local reset_time=$(echo "$weekly_limit" | jq -r '.nextResetTime // 0' 2>/dev/null)
+      # Convert milliseconds to ISO date
+      local iso_reset=$(date -r $((reset_time / 1000)) -u +"%Y-%m-%dT%H:%M:%S.000000+00:00" 2>/dev/null || echo "")
+      result=$(echo "$result" | jq --arg pct "$pct" --arg reset "$iso_reset" '. + {"seven_day": {"utilization": ($pct | tonumber), "resets_at": $reset}}')
+    fi
+
+    echo "$result"
+  else
+    # Return original format as-is
+    echo "$data"
+  fi
+}
+
 # Plan usage (5-hour session)
 if [[ -n "$usage_data" ]]; then
+  # Transform data format if needed
+  usage_data=$(transform_usage_data "$usage_data")
+
   session_pct=$(echo "$usage_data" | jq -r '.five_hour.utilization // empty' 2>/dev/null)
   weekly_pct=$(echo "$usage_data" | jq -r '.seven_day.utilization // empty' 2>/dev/null)
 
