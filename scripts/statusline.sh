@@ -184,9 +184,9 @@ transform_usage_data() {
   # Check if response has the new format (with data.limits structure)
   if echo "$data" | jq -e '.data.limits' &>/dev/null; then
     # Transform new format to expected format
-    # Find TOKENS_LIMIT with unit=6, number=1 (likely 1 hour) and unit=3, number=5 (likely 15 min)
-    local session_limit=$(echo "$data" | jq -r '.data.limits[] | select(.type=="TOKENS_LIMIT" and .unit==6 and .number==1)' 2>/dev/null)
-    local weekly_limit=$(echo "$data" | jq -r '.data.limits[] | select(.type=="TOKENS_LIMIT" and .unit==3 and .number==5)' 2>/dev/null)
+    # Find TOKENS_LIMIT with unit=3, number=5 (short term) and unit=6, number=1 (long term)
+    local session_limit=$(echo "$data" | jq -r '.data.limits[] | select(.type=="TOKENS_LIMIT" and .unit==3 and .number==5)' 2>/dev/null)
+    local weekly_limit=$(echo "$data" | jq -r '.data.limits[] | select(.type=="TOKENS_LIMIT" and .unit==6 and .number==1)' 2>/dev/null)
 
     # Transform to expected format
     local result='{}'
