@@ -23,8 +23,14 @@ LANG_H="h"
 LANG_M="m"
 LANG_RATE_LIMIT="rate limit"
 LANG_NO_UPDATES="no updates"
+BASE_URL="https://api.anthropic.com"
+
 if [[ -f "$CONFIG_FILE" ]]; then
   locale=$(jq -r '.locale // "en"' "$CONFIG_FILE" 2>/dev/null)
+  base_url_override=$(jq -r '.base_url // empty' "$CONFIG_FILE" 2>/dev/null)
+  if [[ -n "$base_url_override" ]]; then
+    BASE_URL="$base_url_override"
+  fi
   if [[ "$locale" == "ru" ]]; then
     LANG_SESSION="сессия"
     LANG_WEEKLY="неделя"
@@ -76,7 +82,7 @@ fetch_usage() {
     -H "Authorization: Bearer ${token}" \
     -H "anthropic-beta: oauth-2025-04-20" \
     -H "Content-Type: application/json" \
-    "https://api.anthropic.com/api/oauth/usage" 2>/dev/null) || return 1
+    "${BASE_URL}/api/oauth/usage" 2>/dev/null) || return 1
 
   if [[ -z "$response" ]]; then
     return 1
